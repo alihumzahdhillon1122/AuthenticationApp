@@ -3,12 +3,15 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { StatusBar } from 'expo-status-bar';
 
 import LoginScreen from './screens/LogInScreen';
+// import AppLoading from 'expo-app-loading';
+import * as SplashScreen from 'expo-splash-screen';
 import SignupScreen from './screens/SignupScreen';
 import WelcomeScreen from './screens/WelcomeScreen';
 import { Colors } from './constants/styles';
 import AuthContextProvider, { AuthContext } from './store/auth-context';
-import { useContext } from 'react';
+import { useContext, useEffect, useState } from 'react';
 import IconButton from './components/ui/IconButton'
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 
 const Stack = createNativeStackNavigator();
@@ -60,17 +63,65 @@ function Navigation() {
 
   );
 }
+// function Root() {
+//   const [isTryingLogIn, setIsTryingLogIn] = useState(true)
+//   const authCtx = useContext(AuthContext);
+//   useEffect(() => {
+//     async function fetchToken() {
+//       const storedToken = await AsyncStorage.getItem('token');
 
+//       if (storedToken) {
+//         authCtx.authenticate(storedToken);
+//       }
+//       setIsTryingLogIn(false)
+//     }
+//     fetchToken();
+//   }, []);
+//   if (isTryingLogIn){
+//     return <AppLoading />
+//   }
+//   return <Navigation />;
+
+// }
+
+SplashScreen.preventAutoHideAsync();
+
+function Root() {
+  const [isTryingLogIn, setIsTryingLogIn] = useState(true);
+  const authCtx = useContext(AuthContext);
+
+  useEffect(() => {
+    async function fetchToken() {
+      // Prevent auto-hiding the splash screen
+      await SplashScreen.preventAutoHideAsync();
+
+      const storedToken = await AsyncStorage.getItem('token');
+
+      if (storedToken) {
+        authCtx.authenticate(storedToken);
+      }
+      setIsTryingLogIn(false);
+      await SplashScreen.hideAsync(); // Hide the splash screen after loading
+    }
+    fetchToken();
+  }, []);
+
+  if (isTryingLogIn) {
+    return null; // Return null while loading; splash screen is shown
+  }
+
+  return <Navigation />;
+}
 export default function App() {
+
   return (
     <>
       <StatusBar style="light" />
       <AuthContextProvider>
-        <Navigation />
+        <Root />
       </AuthContextProvider>
     </>
   );
 }
 
 
-// 6:57   stucked in authentication error while signingup
